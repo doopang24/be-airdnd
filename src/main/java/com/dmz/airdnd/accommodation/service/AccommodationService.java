@@ -93,7 +93,7 @@ public class AccommodationService {
 	@Transactional(readOnly = true)
 	public AccommodationPageResponse findFilteredAccommodations(AccommodationSearchRequest request) {
 		FilterCondition filterCondition = toCondition(request);
-		Pageable pageable = PageRequest.of(request.getPage() - 1, request.getPageSize());
+		Pageable pageable = PageRequest.of(request.getPageNumber() - 1, request.getPageSize());
 
 		Page<Accommodation> accommodationPage = accommodationRepository.findFilteredAccommodations(pageable,
 			filterCondition);
@@ -122,6 +122,7 @@ public class AccommodationService {
 		return FilterCondition.builder()
 			.longitude(request.getLongitude())
 			.latitude(request.getLatitude())
+			.radiusKm(request.getRadiusKm())
 			.minPrice(request.getMinPrice())
 			.maxPrice(request.getMaxPrice())
 			.maxGuests(request.getMaxGuests())
@@ -144,10 +145,10 @@ public class AccommodationService {
 
 	@Transactional(readOnly = true)
 	public AccommodationPageResponse findFilterAccommodationByElastic(AccommodationSearchRequest request) {
-		Pageable pageable = PageRequest.of(request.getPage() - 1, request.getPageSize());
+		Pageable pageable = PageRequest.of(request.getPageNumber() - 1, request.getPageSize());
 
 		Point center = new Point(request.getLongitude(), request.getLatitude());
-		Distance radius = new Distance(5, Metrics.KILOMETERS);
+		Distance radius = new Distance(request.getRadiusKm(), Metrics.KILOMETERS);
 
 		Page<AccommodationDocument> documents = accommodationSearchRepository.findByLocationNear(center, radius,
 			pageable);

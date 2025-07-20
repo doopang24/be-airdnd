@@ -20,6 +20,9 @@ import com.dmz.airdnd.accommodation.dto.response.LabelResponse;
 import com.dmz.airdnd.accommodation.dto.response.AccommodationCreateResponse;
 
 public class AccommodationMapper {
+
+	private static final int MONTHS_TO_ADD = 3;
+
 	public static Accommodation toEntity(AccommodationCreateRequest request, Address address, List<Label> labels) {
 		return Accommodation.builder()
 			.name(request.getName())
@@ -100,7 +103,7 @@ public class AccommodationMapper {
 			coordinates.latitude());
 		// 6개월
 		LocalDate startDate = LocalDate.now();
-		LocalDate endDate = startDate.plusMonths(6);
+		LocalDate endDate = startDate.plusMonths(MONTHS_TO_ADD);
 		List<LocalDate> availableDates = startDate
 			.datesUntil(endDate)
 			.toList();

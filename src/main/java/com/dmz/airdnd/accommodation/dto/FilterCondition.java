@@ -9,6 +9,7 @@ import lombok.Builder;
 public record FilterCondition(
 	double longitude,
 	double latitude,
+	double radiusKm,
 	Integer minPrice,
 	Integer maxPrice,
 	Integer maxGuests,

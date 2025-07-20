@@ -27,6 +27,11 @@ public class AccommodationSearchRequest {
 	@DecimalMax(value = "90.0", message = "위도는 90 이하이어야 합니다.")
 	private Double latitude;
 
+	@NotNull(message = "반경은 필수 입력값입니다.")
+	@DecimalMin(value = "0.0", inclusive = false, message = "반경은 0보다 커야 합니다.")
+	@DecimalMax(value = "50.0", message = "반경 50km 이상은 찾을 수 없습니다.")
+	private Double radiusKm;
+
 	@Min(value = 0, message = "최소 가격은 0 이상이어야 합니다.")
 	private Integer minPrice;
 
@@ -43,7 +48,7 @@ public class AccommodationSearchRequest {
 	private LocalDate checkOut;
 
 	@Min(value = 1, message = "페이지는 1 이상이어야 합니다.")
-	private Integer page;
+	private Integer pageNumber;
 
 	@Min(value = 1, message = "페이지 크기는 1 이상이어야 합니다.")
 	@Max(value = 30, message = "페이지 크기는 30 이하이어야 합니다.")

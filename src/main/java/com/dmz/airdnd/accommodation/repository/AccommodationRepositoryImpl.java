@@ -23,8 +23,6 @@ import lombok.RequiredArgsConstructor;
 public class AccommodationRepositoryImpl implements AccommodationRepositoryCustom {
 	private final JPAQueryFactory queryFactory;
 
-	private final int RADIUS_METERS = 5000; // 5km radius
-
 	@Override
 	public Page<Accommodation> findFilteredAccommodations(Pageable pageable, FilterCondition filterCondition) {
 		QAccommodation accommodation = QAccommodation.accommodation;
@@ -32,12 +30,14 @@ public class AccommodationRepositoryImpl implements AccommodationRepositoryCusto
 
 		double lng = filterCondition.longitude();
 		double lat = filterCondition.latitude();
+		double radiusKm = filterCondition.radiusKm();
 		Integer minPrice = filterCondition.minPrice();
 		Integer maxPrice = filterCondition.maxPrice();
 		Integer maxGuests = filterCondition.maxGuests();
 		List<LocalDate> requestedDates = filterCondition.requestedDates();
 
 		Point userLocation = GeoPointFactory.createPoint(lng, lat);
+		String wkt = String.format("POINT(%s %s)", lat, lng);
 
 		List<Accommodation> accommodations = queryFactory
 			.selectFrom(accommodation)
@@ -53,10 +53,16 @@ public class AccommodationRepositoryImpl implements AccommodationRepositoryCusto
 					)
 					.notExists(),
 				Expressions.booleanTemplate(
-					"ST_Distance_Sphere({0}, {1}) <= {2}",
+					"ST_Contains("
+						+ "ST_Buffer("
+						+ "ST_GeomFromText('" + wkt + "', 4326),"
+						+ "{1}"
+						+ "),"
+						+ "{0}"
+						+ ")",
 					accommodation.address.location,
-					Expressions.constant(userLocation),
-					RADIUS_METERS
+					"'" + wkt + "'",
+					(int)(radiusKm * 1000)
 				)
 			)
 			.orderBy(accommodation.pricePerDay.asc())
@@ -79,10 +85,16 @@ public class AccommodationRepositoryImpl implements AccommodationRepositoryCusto
 					)
 					.notExists(),
 				Expressions.booleanTemplate(
-					"ST_Distance_Sphere({0}, {1}) <= {2}",
+					"ST_Contains("
+						+ "ST_Buffer("
+						+ "ST_GeomFromText('" + wkt + "', 4326),"
+						+ "{1}"
+						+ "),"
+						+ "{0}"
+						+ ")",
 					accommodation.address.location,
-					Expressions.constant(userLocation),
-					RADIUS_METERS
+					"'" + wkt + "'",
+					(int)(radiusKm * 1000)
 				)
 			)
 			.fetchOne();

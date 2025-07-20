@@ -23,22 +23,25 @@ public class ReservationIndexingListener {
 	private final ReservationRepository reservationRepository;
 	private final ElasticsearchRepository<AccommodationDocument, String> elasticsearchRepository;
 
+	private static final int MONTHS_TO_ADD = 3;
+	private static final int DAYS_TO_ADD = 1;
+
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void handle(ReservationCreatedEvent event) {
 		Reservation reservation = reservationRepository.findById(event.getReservationId()).orElseThrow();
 		String accommodationId = reservation.getAccommodation().getId().toString();
 
 		LocalDate today = LocalDate.now();
-		List<LocalDate> fullWindow = today.datesUntil(today.plusMonths(6).plusDays(1))
+		List<LocalDate> fullWindow = today.datesUntil(today.plusMonths(MONTHS_TO_ADD).plusDays(DAYS_TO_ADD))
 			.toList();
 
 		List<LocalDate> reservedDates = reservationRepository
 			.findByAccommodationId(reservation.getAccommodation().getId()).stream()
-			.flatMap(r -> r.getCheckInDate().datesUntil(r.getCheckOutDate()))
+			.flatMap(currentReservation -> currentReservation.getCheckInDate().datesUntil(currentReservation.getCheckOutDate()))
 			.toList();
 
 		List<LocalDate> availableDates = fullWindow.stream()
-			.filter(d -> !reservedDates.contains(d))
+			.filter(bookedDates -> !reservedDates.contains(bookedDates))
 			.collect(Collectors.toList());
 
 		AccommodationDocument existing = elasticsearchRepository.findById(accommodationId)
