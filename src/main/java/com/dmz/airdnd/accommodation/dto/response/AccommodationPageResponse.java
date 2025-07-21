@@ -10,7 +10,7 @@ import lombok.Getter;
 @Builder
 @AllArgsConstructor
 public class AccommodationPageResponse {
-	private int page;
+	private int pageNumber;
 	private int pageSize;
 	private int totalPages;
 	private long totalElements;

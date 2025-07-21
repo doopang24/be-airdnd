@@ -25,10 +25,18 @@ import com.dmz.airdnd.accommodation.dto.response.AccommodationCreateResponse;
 import com.dmz.airdnd.common.exception.ErrorCode;
 import com.dmz.airdnd.common.exception.InvalidFilterConditionException;
 
+/*
+ 애플리케이션의 각 계층(DTO, Entity, Document) 간의 데이터 변환을 책임지는 중앙 매퍼 클래스.
+ 이 클래스를 통해 객체 생성 로직을 중앙에서 관리하고, 각 계층의 독립성을 보장합니다.
+ */
 public class AccommodationMapper {
 
 	private static final int MONTHS_TO_ADD = 3;
 
+	/*
+	 숙소 생성 요청 DTO(AccommodationCreateRequest)를 JPA 엔티티(Accommodation)로 변환합니다.
+	 Controller 에서 받은 데이터를 데이터베이스에 저장하기 위한 형태로 가공합니다.
+	 */
 	public static Accommodation toEntity(AccommodationCreateRequest request, Address address, List<Label> labels) {
 		return Accommodation.builder()
 			.name(request.getName())
@@ -44,6 +52,10 @@ public class AccommodationMapper {
 			.build();
 	}
 
+	/*
+	 JPA 엔티티(Accommodation)를 클라이언트 응답용 DTO(AccommodationResponse)로 변환합니다.
+	 데이터베이스의 원본 데이터를 클라이언트에게 필요한 형태로 가공하여 전달합니다.
+	 */
 	public static AccommodationResponse toResponse(Accommodation accommodation) {
 		return AccommodationResponse.builder()
 			.id(accommodation.getId())
@@ -103,11 +115,15 @@ public class AccommodationMapper {
 		return base;
 	}
 
+	/*
+	 JPA 엔티티(Accommodation)를 Elasticsearch 도큐먼트(AccommodationDocument)로 변환합니다.
+	 MySQL 의 원본 데이터를 검색엔진에 색인하기 위한 형태로 가공합니다.
+	 이 과정에서 JTS 의 Point 를 Spring Data 의 Point 로 변환하는 등, 검색에 최적화된 데이터 구조를 만듭니다.
+	 */
 	public static AccommodationDocument toDocument(Accommodation accommodation, Address address,
 		CoordinatesDto coordinates) {
 		org.springframework.data.geo.Point location = new org.springframework.data.geo.Point(coordinates.longitude(),
 			coordinates.latitude());
-		// 6개월
 		LocalDate startDate = LocalDate.now();
 		LocalDate endDate = startDate.plusMonths(MONTHS_TO_ADD);
 		List<LocalDate> availableDates = startDate
@@ -137,6 +153,10 @@ public class AccommodationMapper {
 			.build();
 	}
 
+	/*
+	 Elasticsearch 도큐먼트(AccommodationDocument)를 클라이언트 응답용 DTO(AccommodationResponse)로 변환합니다.
+	 검색 결과를 클라이언트에게 보여주기 위한 형태로 가공합니다.
+	 */
 	public static AccommodationResponse fromDocument(AccommodationDocument document) {
 		AddressResponse addressResponse = AddressResponse.builder()
 			.country(document.getCountry())
@@ -167,9 +187,13 @@ public class AccommodationMapper {
 			.build();
 	}
 
+	/*
+	 JPA 의 Page<Accommodation> 객체를 클라이언트 응답용 DTO(AccommodationPageResponse)로 변환합니다.
+	 페이징 관련 메타데이터(총 페이지 수, 현재 페이지 등)를 포함하여 변환합니다.
+	 */
 	public static AccommodationPageResponse toPageResponse(Page<Accommodation> accommodationPage) {
 		return AccommodationPageResponse.builder()
-			.page(accommodationPage.getNumber() + 1)
+			.pageNumber(accommodationPage.getNumber() + 1)
 			.pageSize(accommodationPage.getSize())
 			.totalElements(accommodationPage.getTotalElements())
 			.totalPages(accommodationPage.getTotalPages())
@@ -180,6 +204,10 @@ public class AccommodationMapper {
 			.build();
 	}
 
+	/*
+	 검색 요청 DTO(AccommodationSearchRequest)를 내부 검색 조건 객체(FilterCondition)로 변환합니다.
+	 이 과정에서 날짜 범위, 가격 범위 등 검색 조건에 대한 유효성 검사를 함께 수행합니다.
+	 */
 	public static FilterCondition toCondition(AccommodationSearchRequest request) {
 		LocalDate checkIn = request.getCheckIn();
 		LocalDate checkOut = request.getCheckOut();
