@@ -6,18 +6,24 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.locationtech.jts.geom.Point;
+import org.springframework.data.domain.Page;
 
 import com.dmz.airdnd.accommodation.document.AccommodationDocument;
 import com.dmz.airdnd.accommodation.domain.Accommodation;
 import com.dmz.airdnd.accommodation.domain.Address;
 import com.dmz.airdnd.accommodation.domain.Label;
 import com.dmz.airdnd.accommodation.domain.LabelType;
+import com.dmz.airdnd.accommodation.dto.FilterCondition;
 import com.dmz.airdnd.accommodation.dto.request.AccommodationCreateRequest;
+import com.dmz.airdnd.accommodation.dto.request.AccommodationSearchRequest;
+import com.dmz.airdnd.accommodation.dto.response.AccommodationPageResponse;
 import com.dmz.airdnd.accommodation.dto.response.AccommodationResponse;
 import com.dmz.airdnd.accommodation.dto.response.AddressResponse;
 import com.dmz.airdnd.accommodation.dto.response.CoordinatesDto;
 import com.dmz.airdnd.accommodation.dto.response.LabelResponse;
 import com.dmz.airdnd.accommodation.dto.response.AccommodationCreateResponse;
+import com.dmz.airdnd.common.exception.ErrorCode;
+import com.dmz.airdnd.common.exception.InvalidFilterConditionException;
 
 public class AccommodationMapper {
 
@@ -158,6 +164,49 @@ public class AccommodationMapper {
 			.bathroomCount(document.getBathroomCount())
 			.createdAt(Timestamp.from(document.getCreatedAt()))
 			.updatedAt(document.getUpdatedAt() != null ? Timestamp.from(document.getUpdatedAt()) : null)
+			.build();
+	}
+
+	public static AccommodationPageResponse toPageResponse(Page<Accommodation> accommodationPage) {
+		return AccommodationPageResponse.builder()
+			.page(accommodationPage.getNumber() + 1)
+			.pageSize(accommodationPage.getSize())
+			.totalElements(accommodationPage.getTotalElements())
+			.totalPages(accommodationPage.getTotalPages())
+			.accommodationResponses(accommodationPage.getContent()
+				.stream()
+				.map(AccommodationMapper::toResponse)
+				.collect(Collectors.toList()))
+			.build();
+	}
+
+	public static FilterCondition toCondition(AccommodationSearchRequest request) {
+		LocalDate checkIn = request.getCheckIn();
+		LocalDate checkOut = request.getCheckOut();
+
+		if (checkIn != null && checkOut != null) {
+			if (!checkIn.isBefore(checkOut)) {
+				throw new InvalidFilterConditionException(ErrorCode.INVALID_DATE_RANGE);
+			}
+		}
+
+		if (request.getMinPrice() != null && request.getMaxPrice() != null) {
+			if (request.getMinPrice() > request.getMaxPrice()) {
+				throw new InvalidFilterConditionException(ErrorCode.INVALID_MIN_MAX_PRICE);
+			}
+		}
+
+		List<LocalDate> requestedDates =
+			(checkIn != null && checkOut != null) ? checkIn.datesUntil(checkOut).toList() : List.of();
+
+		return FilterCondition.builder()
+			.longitude(request.getLongitude())
+			.latitude(request.getLatitude())
+			.radiusKm(request.getRadiusKm())
+			.minPrice(request.getMinPrice())
+			.maxPrice(request.getMaxPrice())
+			.maxGuests(request.getMaxGuests())
+			.requestedDates(requestedDates)
 			.build();
 	}
 }
