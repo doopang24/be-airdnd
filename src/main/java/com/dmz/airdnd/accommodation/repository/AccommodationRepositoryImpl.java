@@ -3,7 +3,6 @@ package com.dmz.airdnd.accommodation.repository;
 import java.time.LocalDate;
 import java.util.List;
 
-import org.locationtech.jts.geom.Point;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -11,8 +10,8 @@ import org.springframework.data.domain.Pageable;
 import com.dmz.airdnd.accommodation.domain.Accommodation;
 import com.dmz.airdnd.accommodation.domain.QAccommodation;
 import com.dmz.airdnd.accommodation.dto.FilterCondition;
-import com.dmz.airdnd.accommodation.util.GeoPointFactory;
 import com.dmz.airdnd.reservation.domain.QAvailability;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -36,8 +35,13 @@ public class AccommodationRepositoryImpl implements AccommodationRepositoryCusto
 		Integer maxGuests = filterCondition.maxGuests();
 		List<LocalDate> requestedDates = filterCondition.requestedDates();
 
-		Point userLocation = GeoPointFactory.createPoint(lng, lat);
-		String wkt = String.format("POINT(%s %s)", lat, lng);
+		String userPointWkt = String.format("POINT(%f %f)", lat, lng);
+		BooleanExpression distanceCondition = Expressions.booleanTemplate(
+			"ST_Distance_Sphere({0}, ST_GeomFromText({1}, 4326)) <= {2}",
+			accommodation.address.location,
+			userPointWkt,
+			radiusKm * 1000
+		);
 
 		List<Accommodation> accommodations = queryFactory
 			.selectFrom(accommodation)
@@ -52,18 +56,7 @@ public class AccommodationRepositoryImpl implements AccommodationRepositoryCusto
 						availability.date.in(requestedDates)
 					)
 					.notExists(),
-				Expressions.booleanTemplate(
-					"ST_Contains("
-						+ "ST_Buffer("
-						+ "ST_GeomFromText('" + wkt + "', 4326),"
-						+ "{1}"
-						+ "),"
-						+ "{0}"
-						+ ")",
-					accommodation.address.location,
-					"'" + wkt + "'",
-					(int)(radiusKm * 1000)
-				)
+				distanceCondition
 			)
 			.orderBy(accommodation.pricePerDay.asc())
 			.offset(pageable.getOffset())
@@ -84,18 +77,7 @@ public class AccommodationRepositoryImpl implements AccommodationRepositoryCusto
 						availability.date.in(requestedDates)
 					)
 					.notExists(),
-				Expressions.booleanTemplate(
-					"ST_Contains("
-						+ "ST_Buffer("
-						+ "ST_GeomFromText('" + wkt + "', 4326),"
-						+ "{1}"
-						+ "),"
-						+ "{0}"
-						+ ")",
-					accommodation.address.location,
-					"'" + wkt + "'",
-					(int)(radiusKm * 1000)
-				)
+				distanceCondition
 			)
 			.fetchOne();
 
