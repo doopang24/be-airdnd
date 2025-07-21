@@ -46,11 +46,11 @@ class AccommodationServiceTest {
 			.maxGuests(4)
 			.checkIn(LocalDate.parse("2023-10-01"))
 			.checkOut(LocalDate.parse("2023-10-05"))
-			.page(1)
+			.pageNumber(1)
 			.pageSize(3)
 			.build();
 
-		Pageable pageable = PageRequest.of(request.getPage() - 1, request.getPageSize());
+		Pageable pageable = PageRequest.of(request.getPageNumber() - 1, request.getPageSize());
 
 		Page<Accommodation> accommodationPage = new PageImpl<>(
 			List.of(accommodation),
@@ -64,7 +64,7 @@ class AccommodationServiceTest {
 		AccommodationPageResponse response = accommodationService.findFilteredAccommodations(request);
 
 		// then
-		assertThat(response.getPage()).isEqualTo(1);
+		assertThat(response.getPageNumber()).isEqualTo(1);
 		assertThat(response.getPageSize()).isEqualTo(3);
 		assertThat(response.getTotalPages()).isEqualTo(1);
 		assertThat(response.getTotalElements()).isEqualTo(1);

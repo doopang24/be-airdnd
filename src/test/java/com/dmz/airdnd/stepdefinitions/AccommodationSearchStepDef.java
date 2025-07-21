@@ -83,12 +83,13 @@ public class AccommodationSearchStepDef {
 		UriComponentsBuilder builder = UriComponentsBuilder.fromPath("/api/accommodations");
 		addQueryParamIfPresent(builder, "longitude", "경도");
 		addQueryParamIfPresent(builder, "latitude", "위도");
+		addQueryParamIfPresent(builder, "radiusKm", "반경");
 		addQueryParamIfPresent(builder, "minPrice", "최소 가격");
 		addQueryParamIfPresent(builder, "maxPrice", "최대 가격");
 		addQueryParamIfPresent(builder, "maxGuests", "최대 인원");
 		addQueryParamIfPresent(builder, "checkIn", "체크인");
 		addQueryParamIfPresent(builder, "checkOut", "체크아웃");
-		addQueryParamIfPresent(builder, "page", "페이지");
+		addQueryParamIfPresent(builder, "pageNumber", "페이지");
 		addQueryParamIfPresent(builder, "pageSize", "페이지 크기");
 
 		String uri = builder.build().toUriString();
@@ -110,7 +111,7 @@ public class AccommodationSearchStepDef {
 	@Then("페이지 번호는 {string}, 페이지 크기는 {string}, 총 페이지 수는 {string}이어야 한다.")
 	public void 페이지_정보를_검증한다(String page, String size, String totalPages) throws Exception {
 		resultActions
-			.andExpect(jsonPath("$.data.page").value(Integer.parseInt(page)))
+			.andExpect(jsonPath("$.data.pageNumber").value(Integer.parseInt(page)))
 			.andExpect(jsonPath("$.data.pageSize").value(Integer.parseInt(size)))
 			.andExpect(jsonPath("$.data.totalPages").value(Integer.parseInt(totalPages)));
 	}
